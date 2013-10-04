@@ -6,7 +6,9 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -49,15 +51,15 @@ func main() {
 			if date != nil {
 				pdate, _ := time.Parse(layout, date.StringVal())
 				sy := strconv.Itoa(pdate.Year())
-				sd := strconv.Itoa(pdate.Day())
+				sd := fmt.Sprintf("%02d", pdate.Day())
 				sm := pdate.Month().String()
 				ppath := path.Join(ipath, sy, sm, sd)
 				_, fn := path.Split(file)
 				os.MkdirAll(ppath, 0755)
 
 				dest := unique(ppath, fn)
-				//os.Rename(file, dest)
 				fmt.Fprintf(os.Stdout, "Move file %s to %s\n", file, dest)
+				os.Rename(file, dest)
 			}
 		}
 
@@ -76,6 +78,18 @@ func unique(tpath string, filename string) string {
 
 	if os.IsNotExist(err) {
 		return fullpath
+	}
+
+	i := 0
+	ext := filepath.Ext(filename)
+	wefn := strings.Replace(filename, ext, "", -1)
+
+	for os.IsExist(err) {
+		newfn := fmt.Sprintf("%s_%d%s", wefn, i, ext)
+		newpath := path.Join(tpath, newfn)
+		fullpath = newpath
+		_, err = os.Stat(newpath)
+		i++
 	}
 
 	return fullpath
